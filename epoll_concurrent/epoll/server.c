@@ -10,7 +10,7 @@
 
 #include "wrap.h"
 
-#define MAXLINE 5
+#define MAXLINE 10       // 一次只能读10
 #define SERV_PORT 8888
 #define OPEN_MAX 5000                       // 打开文件描述符上限
 
