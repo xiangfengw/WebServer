@@ -9,7 +9,8 @@
 #define SERV_PORT 6666
 #define SERV_IP "127.0.0.1"
 
-int main() {
+int main()
+{
     int lfd, cfd;
     struct sockaddr_in serv_addr, cli_addr;
     socklen_t cli_addr_len;
@@ -23,20 +24,21 @@ int main() {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(SERV_PORT);
     inet_pton(AF_INET, SERV_IP, &serv_addr.sin_addr.s_addr);
-    
+
     bind(lfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
     listen(lfd, 128);
-    
+
     cli_addr_len = sizeof(cli_addr);
-    cfd = accept(lfd, (struct sockaddr*)&cli_addr, &cli_addr_len);
-    while (1) {
+    cfd = accept(lfd, (struct sockaddr *)&cli_addr, &cli_addr_len);
+    while (1)
+    {
         n = read(cfd, buf, sizeof(buf));
-        for(int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
-        buf[i] = toupper(buf[i]);
+            buf[i] = toupper(buf[i]);
         }
-        write(cfd, buf, n);  
+        write(cfd, buf, n);
     }
 
     close(lfd);

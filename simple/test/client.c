@@ -25,10 +25,11 @@ int main()
 
     connect(cfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
-    while(1) {
-        fgets(buf, sizeof(buf), stdin);  // "hello world" --> fgets --> "hello world\n\0"
+    while (1)
+    {
+        fgets(buf, sizeof(buf), stdin); // "hello world" --> fgets --> "hello world\n\0"
         write(cfd, buf, strlen(buf));
-        n =read(cfd, buf, sizeof(buf));
+        n = read(cfd, buf, sizeof(buf));
         write(STDOUT_FILENO, buf, n);
     }
 
