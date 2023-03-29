@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     if (res == -1)
         perr_exit("epoll_ctl error");
 
-    for ( ; ; ) {
+    while(1) {
         /*epoll为server阻塞监听事件, ep为struct epoll_event类型数组, OPEN_MAX为数组容量, -1表永久阻塞*/
         nready = epoll_wait(efd, ep, OPEN_MAX, -1);  // ep初始为空
         if (nready == -1)
@@ -82,25 +82,27 @@ int main(int argc, char *argv[])
                 flag = fcntl(sockfd, F_GETFL);
                 flag |= O_NONBLOCK;
                 fcntl(sockfd, F_SETFL, flag);        // 修改sockfd为非阻塞
-
+                printf("new epoll\n");
                 while((n = Read(sockfd, buf, MAXLINE)) > 0) {     // ET模式下，轮询非阻塞读
-                    if (n == 0) {                       //读到0,说明客户端关闭链接
+                    printf("new read\n");
+                    Write(STDOUT_FILENO, buf, n);
+                    Write(sockfd, buf, n);
+                }
+                if (n == 0) {                       //读到0,说明客户端关闭链接
                     res = epoll_ctl(efd, EPOLL_CTL_DEL, sockfd, NULL);  //将该文件描述符从红黑树摘除
                     if (res == -1)
                         perr_exit("epoll_ctl error");
                     Close(sockfd);                  //关闭与该客户端的链接
                     printf("client[%d] closed connection\n", sockfd);
-
-                    } else if (n < 0) {                 //出错
-                        perror("read n < 0 error: ");
-                        res = epoll_ctl(efd, EPOLL_CTL_DEL, sockfd, NULL);
-                        Close(sockfd);
-
-                    } else {                            //实际读到了字节数
-                        Write(STDOUT_FILENO, buf, n);
-                        Write(sockfd, buf, n);
+                } else if (n < 0) {                 //出错
+                    if( (errno == EAGAIN) || (errno == EWOULDBLOCK) ) {
+                        printf("read finish\n");
+                        break;
                     }
-                }
+                    perror("read n < 0 error: ");
+                    res = epoll_ctl(efd, EPOLL_CTL_DEL, sockfd, NULL);
+                    Close(sockfd);
+                } 
             }
         }
     }
