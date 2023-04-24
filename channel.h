@@ -8,6 +8,12 @@
 
 namespace tiny_webserver {
 
+enum ChannelState {
+    kNew,       // 新fd 未添加到epoll关注列表
+    kAdded,     // 已经添加
+    kDeleted    // 已经删除
+};
+
 class Channel
 {
 public:
@@ -16,11 +22,11 @@ public:
 
     void HandleEvent();
 
-    void SetReadCallBack(const ReadCallback& callback) {
+    void SetReadCallback(const ReadCallback& callback) {
         read_callback_ = callback;
     }
     
-    void SetWriteCallBack(const WriteCallback& callback) {
+    void SetWriteCallback(const WriteCallback& callback) {
         write_callback_ = callback;
     }
 
@@ -29,9 +35,14 @@ public:
         Update();
     }
 
-    void EnableReading() {
+    void EnableWriting() {
         events_ |= EPOLLOUT;
         Update();
+    }
+
+    void DisableWriting() {
+        events_ &= ~EPOLLOUT;
+        Update();  
     }
 
     void Update() {
@@ -45,13 +56,15 @@ public:
     int fd() { return fd_; }
     int events() { return events_; }
     int recv_events() { return recv_events_; }
+    ChannelState state() { return state_; }
 
 private:
     EventLoop* loop_;
     int fd_;
     int events_;           // fd当前处理（注册）的事件
     int recv_events_;      // poller设置的就绪事件
-    
+
+    ChannelState state_;
     ReadCallback read_callback_;
     WriteCallback write_callback_;
 };

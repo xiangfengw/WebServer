@@ -7,6 +7,8 @@
 #include "tcpserver.h"
 #include "tcpconnection.h"
 
+const int thread_num = 8;
+
 namespace tiny_webserver {
 
     class Address;

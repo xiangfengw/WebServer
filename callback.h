@@ -9,6 +9,8 @@ using std::placeholders::_2;
 using std::placeholders::_3;
 
 namespace tiny_webserver {
+    class TcpConnection;
+
     typedef std::function<void (TcpConnection*)> ConnectionCallback;
     typedef std::function<void (TcpConnection*)> MessageCallback;
     typedef std::function<void ()> ReadCallback;

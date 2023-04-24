@@ -1,4 +1,5 @@
 #include <functional>
+#include <iostream>
 
 #include "echo.h"
 #include "tcpserver.h"
@@ -8,4 +9,5 @@ EchoServer::EchoServer(tiny_webserver::EventLoop* loop, const tiny_webserver::Ad
       server_(loop, listen_addr) {
     server_.SetConnectionCallback(std::bind(&EchoServer::ConnectionCallback, this, _1));
     server_.SetMessageCallback(std::bind(&EchoServer::MessageCallback, this, _1));
+    server_.SetThreadNum(thread_num);
 }

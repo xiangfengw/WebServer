@@ -1,4 +1,5 @@
 #include <sys/epoll.h>
+#include <unistd.h>
 
 #include "channel.h"
 
@@ -15,7 +16,7 @@ void Channel::HandleEvent() {
         read_callback_();
     } else if (recv_events_ & EPOLLOUT) {
         write_callback_();
-    } else { 
-        
-    }
+    } else if (recv_events_ & EPOLLRDHUP) { 
+        close(fd_);
+    } else { }
 }

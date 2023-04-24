@@ -1,0 +1,17 @@
+target = echo_server
+src = $(wildcard *.cc)
+obj = $(patsubst %.cc, %.o, $(src))
+
+CC = g++
+CFLAGS = -Wall -g -c
+LDFLAGS = -pthread
+
+$(target):$(obj)
+	$(CC) $(LDFLAGS) $(obj) -g -o $@
+
+%.o:%.c
+	$(CC) $(CFLAGS) $< -o $@
+
+.PHONY : clean
+clean:
+	rm *.o

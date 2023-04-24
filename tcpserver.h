@@ -6,11 +6,11 @@
 #include "callback.h"
 #include "eventloop.h"
 #include "acceptor.h"
+#include "eventloopthreadpool.h"
 
 namespace tiny_webserver {
 
 class Address;
-class EventLoopThreadPoll;
 
 class TcpServer {
 public:
@@ -18,8 +18,8 @@ public:
     ~TcpServer();
 
     void Start() {
-        //threads_.Start();
-        loop_->RunOneFunc(std::bind(&Acceptor::Listen, acceptor_));
+        threads_->StartLoop();
+        loop_->RunInLoop(std::bind(&Acceptor::Listen, acceptor_));
     }
 
     void SetConnectionCallback(const ConnectionCallback& callback) { 
@@ -30,10 +30,14 @@ public:
         message_callback_ = callback;
     }
 
+    void SetThreadNum(int thread_num) {
+        threads_->SetThreadNum(thread_num);
+    }
+
     void NewConnection(int connfd);
 private:
   EventLoop* loop_;
-  EventLoopThreadPoll* threads_;
+  EventLoopThreadPool* threads_;
   Acceptor* acceptor_;
   
   ConnectionCallback connection_callback_;
