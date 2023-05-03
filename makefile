@@ -1,4 +1,5 @@
-target = echo_server
+# target = echo_server
+target = http_server
 src = $(wildcard *.cc)
 obj = $(patsubst %.cc, %.o, $(src))
 

@@ -47,6 +47,13 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "thread": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "cassert": "cpp",
+        "cerrno": "cpp",
+        "climits": "cpp",
+        "map": "cpp",
+        "ios": "cpp",
+        "queue": "cpp",
+        "random": "cpp"
     }
 }

@@ -36,12 +36,21 @@ int Epoller::SetNonBlocking(int fd) {
 
 void Epoller::Update(Channel* channel) {
     int op = 0, events = channel->events();
-    if(events & (EPOLLHUP | EPOLLERR)) {
-        op = EPOLL_CTL_DEL;
-    } else if (events & EPOLLIN) {
-        op = EPOLL_CTL_ADD;
-        SetNonBlocking(channel->fd());
-    } else { }
+    ChannelState state = channel->state();
+    if(state == kNew || state == kDeleted) {
+        channel->SetChannelState(kAdded);
+        if(events & EPOLLIN) {
+            op = EPOLL_CTL_ADD;
+            SetNonBlocking(channel->fd());
+        } else if (events & EPOLLRDHUP) {
+            op = EPOLL_CTL_DEL;
+        } else {
+
+        }
+    } else {
+        op = EPOLL_CTL_MOD; 
+    }
+    
     UpdateChannel(op, channel);
 }
 
@@ -52,4 +61,5 @@ void Epoller::UpdateChannel(int operation, Channel* channel) {
     event.data.ptr = static_cast<void*>(channel);
 
     epoll_ctl(epollfd_, operation, channel->fd(), &event);
+    return;
 }

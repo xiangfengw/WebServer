@@ -4,41 +4,85 @@
 
 #include "tcpconnection.h"
 #include "channel.h"
+#include "buffer.h"
 
 using namespace tiny_webserver;
 
 TcpConnection::TcpConnection(EventLoop* loop, int connfd)
     : loop_(loop),
       connfd_(connfd),
+      shutdown_(false),
       channel_(new Channel(loop_, connfd_)) {
     channel_->SetReadCallback(std::bind(&TcpConnection::HandleMessage, this));
+    channel_->SetWriteCallback(std::bind(&TcpConnection::HandleWrite, this));
 }
 
 void TcpConnection::HandleMessage() {
-    while(1) {
-        int ret = Recv();
-        if(ret > 0) {
-            message_callback_(this);
-        } else if (ret == 0) {
-            std::cout << "conn finished" << std::endl;
-            // handleClose();
-            break;
-        } else {
-            if(errno == EINTR) {
-                continue;
-            }
-            break;
-        }
+    // while(1) {
+    int read_size = input_buffer_.ReadFd(connfd_);
+    if(read_size > 0) {
+        message_callback_(this, &input_buffer_);
+    }
+        // int ret = Recv();
+        // if(ret > 0) {
+        //     message_callback_(this);
+        // } else if (ret == 0) {
+        //     std::cout << "conn finished" << std::endl;
+        //     // handleClose();
+        //     break;
+        // } else {
+        //     if(errno == EINTR) {
+        //         continue;
+        //     }
+        //     break;
+        // }
+    // }
+}
+
+void TcpConnection::HandleWrite() {
+    int len = output_buffer_.readablebytes();
+    int remaining = len;
+    int send_size = send(connfd_, output_buffer_.Peek(), remaining, 0);
+    remaining -= send_size;
+  
+    assert(remaining <= len);
+    if (!remaining) {
+        channel_->DisableWriting();
     }
 }
 
-void TcpConnection::Send(const string& message) {
-    strcpy(buf_, message.c_str());
-    send(connfd_, (const void *)(buf_), sizeof(buf_), 0);
+void TcpConnection::Send(const char* message, int len) {
+  int remaining = len;
+  int send_size = 0;
+  if (!channel_->IsWriting() && output_buffer_.readablebytes() == 0) {
+    send_size = send(connfd_, message, len, 0);
+    remaining -= send_size; 
+  }
+
+  assert(remaining <= len);
+  if (remaining > 0) {
+    output_buffer_.Append(message + send_size, remaining);
+    if (!channel_->IsWriting()) {
+      channel_->EnableWriting(); 
+    }
+  }
 }
 
-std::string TcpConnection::Get() {
-    string message(buf_);
-    memset(buf_, '\0', sizeof(buf_));
-    return message;
+void TcpConnection::Send(Buffer* buffer) {
+  Send(buffer->Peek(), buffer->readablebytes()); 
 }
+
+void TcpConnection::Send(const string& message) {
+  Send(message.data(), sizeof(message.size()));
+}
+
+// void TcpConnection::Send(const string& message) {
+//     strcpy(buf_, message.c_str());
+//     send(connfd_, (const void *)(buf_), sizeof(buf_), 0);
+// }
+
+// std::string TcpConnection::Get() {
+//     string message(buf_);
+//     memset(buf_, '\0', sizeof(buf_));
+//     return message;
+// }

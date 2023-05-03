@@ -1,3 +1,5 @@
+#if 0
+
 #include <functional>
 #include <iostream>
 
@@ -11,3 +13,5 @@ EchoServer::EchoServer(tiny_webserver::EventLoop* loop, const tiny_webserver::Ad
     server_.SetMessageCallback(std::bind(&EchoServer::MessageCallback, this, _1));
     server_.SetThreadNum(thread_num);
 }
+
+#endif

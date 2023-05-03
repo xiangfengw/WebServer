@@ -53,10 +53,17 @@ public:
         recv_events_ = revt;
     }
 
+    void SetChannelState(ChannelState state) {
+        state_ = state;
+    }
+
     int fd() { return fd_; }
     int events() { return events_; }
     int recv_events() { return recv_events_; }
     ChannelState state() { return state_; }
+
+    bool IsWriting() { return events_ & EPOLLOUT; }
+    bool IsReading() { return events_ & EPOLLIN; }
 
 private:
     EventLoop* loop_;
