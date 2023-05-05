@@ -6,6 +6,7 @@
 #include <functional>
 #include <utility>
 
+#include "callback.h"
 #include "tcpserver.h"
 #include "tcpconnection.h"
 #include "buffer.h"
@@ -17,7 +18,7 @@ using tiny_webserver::HttpStatusCode;
 
 namespace tiny_webserver {
 
-static const int kThreadNums = 8;
+static const int kThreadNums = 6;
 
 class EventLoop;
 

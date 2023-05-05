@@ -20,8 +20,17 @@ Acceptor::Acceptor(EventLoop* loop, const Address& address)
     : loop_(loop),
       listenfd_(socket(PF_INET, SOCK_STREAM, 0)),
       channel_(new Channel(loop, listenfd_)) {
+    int option_val = 1;
+    setsockopt(listenfd_, SOL_SOCKET, SO_KEEPALIVE,
+               &option_val, static_cast<socklen_t>(sizeof option_val));
     BindListenFd(address);
     channel_->SetReadCallback(std::bind(&Acceptor::NewConnection, this));
+}
+
+Acceptor::~Acceptor() {
+    channel_->DisableAll();
+    loop_->Remove(channel_.get());
+    close(listenfd_);
 }
 
 void Acceptor::BindListenFd(const Address& addr) {
@@ -43,7 +52,14 @@ void Acceptor::Listen() {
 void Acceptor::NewConnection() {
     struct sockaddr_in client;
     socklen_t client_addrlen = sizeof(client);
-    int connfd = accept(listenfd_, (struct sockaddr*)& client, &client_addrlen);
+    
+    int connfd = ::accept4(listenfd_, (struct sockaddr*)&client, &client_addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    
+    int option_val = 1;
+    setsockopt(listenfd_, SOL_SOCKET, SO_KEEPALIVE,
+               &option_val, static_cast<socklen_t>(sizeof option_val)); 
+    assert(connfd > 0);
+
     new_connection_callback_(connfd);
 }
 

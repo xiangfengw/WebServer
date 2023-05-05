@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 
 #include <string> 
+#include <memory>
 
 #include "callback.h"
 #include "channel.h"
@@ -18,8 +19,13 @@ namespace tiny_webserver {
 
 class EventLoop;
 
-class TcpConnection {
+class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
+    enum ConnectionState {
+        kConnected,
+        kDisconnected
+    };
+
     TcpConnection(EventLoop* loop, int connfd);
     ~TcpConnection();
 
@@ -31,7 +37,12 @@ public:
         message_callback_ = callback;
     }
 
+    void SetCloseCallback(CloseCallback callback) {
+        close_callback_ = std::move(callback);
+    } 
+
     void ConnectionEstablished() {
+        state_ = kConnected;
         channel_->EnableReading();
         connection_callback_(this, &input_buffer_);
     }
@@ -43,11 +54,13 @@ public:
     void Shutdown() {
         if(!channel_->IsWriting()) {
             shutdown_ = true;
-            ::shutdown(connfd_, SHUT_WR);
+            shutdown(connfd_, SHUT_WR);
         }
     }
 
-    bool IsShutdown() const { return shutdown_; } 
+    bool IsShutdown() const { return shutdown_; }
+    void ConnectionDestructor();
+    void HandleClose();
     void HandleMessage();
     void HandleWrite();
     void Send(Buffer* buffer);
@@ -55,7 +68,8 @@ public:
     void Send(const char* message, int len);
     void Send(const char* message) { Send(message, strlen(message)); }
 
-    string Get();
+    int fd() const { return connfd_; } 
+    EventLoop* loop() const { return loop_; }
  
 private:
     // 接受connfd_发来的数据到buf_缓冲区
@@ -65,10 +79,11 @@ private:
     //     return ret;
     // }
 
+    ConnectionState state_;
     EventLoop* loop_;
     bool shutdown_;
     int connfd_;
-    Channel* channel_;
+    std::unique_ptr<Channel> channel_;
     Buffer input_buffer_;
     Buffer output_buffer_;
     HttpContent content_;
@@ -76,6 +91,7 @@ private:
 
     ConnectionCallback connection_callback_;
     MessageCallback message_callback_;
+    CloseCallback close_callback_;
 };
 
 }  // namespace tiny_webserver

@@ -2,11 +2,14 @@
 #define TINY_WEBSERVER_TCPSERVER_H_
 
 #include <functional>
+#include <unordered_map>
+#include <memory>
 
 #include "callback.h"
 #include "eventloop.h"
 #include "acceptor.h"
 #include "eventloopthreadpool.h"
+#include "tcpconnection.h"
 
 namespace tiny_webserver {
 
@@ -19,7 +22,7 @@ public:
 
     void Start() {
         threads_->StartLoop();
-        loop_->RunInLoop(std::bind(&Acceptor::Listen, acceptor_));
+        loop_->RunInLoop(std::bind(&Acceptor::Listen, acceptor_.get()));
     }
 
     void SetConnectionCallback(const ConnectionCallback& callback) { 
@@ -34,16 +37,20 @@ public:
         threads_->SetThreadNum(thread_num);
     }
 
-    void NewConnection(int connfd);
+    void HandleNewConnection(int connfd);
+    void HandleClose(const TcpConnectionPtr& conn);
+    void HandleCloseInLoop(const TcpConnectionPtr& ptr);   
 private:
-  EventLoop* loop_;
-  EventLoopThreadPool* threads_;
-  Acceptor* acceptor_;
+    typedef std::unordered_map<int, TcpConnectionPtr> ConnectionMap;
+
+    EventLoop* loop_;
+    std::unique_ptr<EventLoopThreadPool> threads_;
+    std::unique_ptr<Acceptor> acceptor_;
   
-  ConnectionCallback connection_callback_;
-  MessageCallback message_callback_;
+    ConnectionCallback connection_callback_;
+    MessageCallback message_callback_;
+    ConnectionMap connections_;
 };
 
 }// namespace tiny_webserver
 #endif
-

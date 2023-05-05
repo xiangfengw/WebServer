@@ -19,7 +19,7 @@ EventLoopThreadPool::~EventLoopThreadPool() { }
 void EventLoopThreadPool::StartLoop() {
     for(int i = 0; i < thread_num_; ++i) {
         EventLoopThread* thread = new EventLoopThread();
-        threads_.emplace_back(thread);
+        threads_.emplace_back(std::unique_ptr<EventLoopThread>(thread));
         loops_.emplace_back(thread->StartLoop());
     }
 }

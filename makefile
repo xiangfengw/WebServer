@@ -4,8 +4,9 @@ src = $(wildcard *.cc)
 obj = $(patsubst %.cc, %.o, $(src))
 
 CC = g++
-CFLAGS = -Wall -g -c
+CFLAGS = -Wall -g -c -O3 -DNDEBUG
 LDFLAGS = -pthread
+
 
 $(target):$(obj)
 	$(CC) $(LDFLAGS) $(obj) -g -o $@

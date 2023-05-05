@@ -16,16 +16,17 @@ void HttpResponse::AppendToBuffer(Buffer* buffer) {
     message += (server_http_version_ + " " + 
               std::to_string(status_code_) + " " + 
               status_message_ + CRLF);
-  
+
     if (close_connection_) {
         message += ("Connection: close" + CRLF);
     } else {
         message += ("Content-Length: ");
         message += (std::__cxx11::to_string(body_.size()) + CRLF);
         message += ("Connection: Keep-Alive" + CRLF);
-        message += ("Content-Type:" + type_ + CRLF);
-        message += ("Server: " + server_name_ + CRLF);
     }
+    message += ("Content-Type:" + type_ + CRLF);
+    message += ("Server: " + server_name_ + CRLF);
+
     message += CRLF;
     message += body_;
 

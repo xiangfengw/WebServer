@@ -6,15 +6,19 @@ using namespace tiny_webserver;
 EventLoop::EventLoop()
     : tid_(pthread_self()),
       epoller_(new Epoller()),
-      wakeup_fd_(eventfd(0, EFD_NONBLOCK)),
-      wakeup_channel_(new Channel(this, wakeup_fd_)) {
+      wakeup_fd_(eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)),
+      wakeup_channel_(new Channel(this, wakeup_fd_)),
+      calling_functors_(false) {
     // 设置wakeupchannel的回调函数
     wakeup_channel_->SetReadCallback(std::bind(&EventLoop::HandleRead, this));
     // 总是监听wakeupfd的读事件
     wakeup_channel_->EnableReading();
 }
 
-EventLoop::~EventLoop() {}
+EventLoop::~EventLoop() {
+    wakeup_channel_->DisableAll();
+    Remove(wakeup_channel_.get());
+}
 
 void EventLoop::Loop() {
     while(1) {
@@ -40,18 +44,23 @@ void EventLoop::HandleRead() {
 }
 
 // 在I/O线程中调用某个函数，该函数可以跨线程调用
-void EventLoop::RunInLoop(const BasicFunc& func) { 
+void EventLoop::RunInLoop(BasicFunc func) { 
     if (IsInThreadLoop()) {   
         func();
     } else {
-        {
-            MutexLockGuard lock(mutex_);
-            to_do_list_.emplace_back(func);
-        }
-        if (!IsInThreadLoop()) {
-            uint64_t write_one_byte = 1;  
-            write(wakeup_fd_, &write_one_byte, sizeof(write_one_byte));
-        }
+        QueueOneFunc(std::move(func));
+    }
+}
+
+void EventLoop::QueueOneFunc(BasicFunc func) {
+    {  
+        MutexLockGuard lock(mutex_);
+        to_do_list_.emplace_back(std::move(func));
+    }
+
+    if (!IsInThreadLoop() || calling_functors_) {
+        uint64_t write_one_byte = 1;  
+        ::write(wakeup_fd_, &write_one_byte, sizeof(write_one_byte));
     }
 }
 
@@ -65,6 +74,7 @@ void EventLoop::RunInLoop(const BasicFunc& func) {
 
 void EventLoop::DoToDoList() {
     ToDoList functors;
+    calling_functors_ = true;
     {
         MutexLockGuard lock(mutex_);
         functors.swap(to_do_list_);
@@ -72,5 +82,6 @@ void EventLoop::DoToDoList() {
     for(const auto& func : functors) {
         func();
     }
+    calling_functors_ = false;
 }
 

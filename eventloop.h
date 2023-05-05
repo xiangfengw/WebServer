@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <functional>
+#include <memory>
 
 #include "mutex.h"
 #include "epoller.h"
@@ -26,20 +27,23 @@ public:
     EventLoop();
     ~EventLoop();
 
-    bool IsInThreadLoop() { return pthread_self() == tid_; }
-    pthread_t DebugShowTid() { return tid_; }
-
     void Loop();
     void HandleRead();
+
     void Update(Channel* channel) { epoller_->Update(channel); }
-    void RunInLoop(const BasicFunc& func);
+    void Remove(Channel* channel) { epoller_->Remove(channel); }
+    
+    bool IsInThreadLoop() { return pthread_self() == tid_; }
+    void QueueOneFunc(BasicFunc func);
+    void RunInLoop(BasicFunc func);
     void DoToDoList();
 
 private:
     pthread_t tid_;
-    Epoller* epoller_;
+    std::unique_ptr<Epoller> epoller_;
     int wakeup_fd_;              // 用于eventfd 线程间通信
-    Channel* wakeup_channel_;    // wakeupfd对应的channel 会纳入epoller管理
+    std::unique_ptr<Channel> wakeup_channel_;    // wakeupfd对应的channel 会纳入epoller管理
+    bool calling_functors_;      // 是否正在处理to_do_list
     Channels active_channels_;   // epoller返回的活动通道
     ToDoList to_do_list_;        // 本线程或其他线程使用queueInLoop添加的任务
 

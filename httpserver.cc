@@ -1,7 +1,5 @@
 #include "httpserver.h"
 
-#include <functional>
-
 using namespace tiny_webserver;
 
 using tiny_webserver::Version;
@@ -32,7 +30,7 @@ void HttpServer::MessageCallback(TcpConnection* connection,
     if (content->GetCompleteRequest()) {
         DealWithRequest(content->request(), connection);
         content->ResetContentState();
-    }   
+    }
 }
 
 void HttpServer::DealWithRequest(const HttpRequest& request, 
@@ -49,6 +47,6 @@ void HttpServer::DealWithRequest(const HttpRequest& request,
     connection->Send(&buffer);
 
     if (response.CloseConnection()) {
-        //connection->ShutDown();
+        connection->Shutdown();
     }
 }

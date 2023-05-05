@@ -41,6 +41,7 @@ void RunOneFunc() {
     latch_ = nullptr;  
     func_();
 }
+
 };
 
 }

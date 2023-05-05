@@ -17,26 +17,31 @@ enum ChannelState {
 class Channel
 {
 public:
-    Channel(EventLoop* loop, const int fd);
+    Channel(EventLoop* loop, const int& fd);
     ~Channel();
 
     void HandleEvent();
 
-    void SetReadCallback(const ReadCallback& callback) {
-        read_callback_ = callback;
+    void SetReadCallback(const ReadCallback callback) {
+        read_callback_ = std::move(callback);
     }
     
-    void SetWriteCallback(const WriteCallback& callback) {
-        write_callback_ = callback;
+    void SetWriteCallback(const WriteCallback callback) {
+        write_callback_ = std::move(callback);
     }
 
     void EnableReading() {
-        events_ |= EPOLLIN;
+        events_ |= (EPOLLIN | EPOLLPRI);
         Update();
     }
 
     void EnableWriting() {
         events_ |= EPOLLOUT;
+        Update();
+    }
+    
+    void DisableAll() {
+        events_ = 0;
         Update();
     }
 
@@ -57,13 +62,13 @@ public:
         state_ = state;
     }
 
-    int fd() { return fd_; }
-    int events() { return events_; }
-    int recv_events() { return recv_events_; }
-    ChannelState state() { return state_; }
+    int fd() const { return fd_; }
+    int events() const { return events_; }
+    int recv_events() const { return recv_events_; }
+    ChannelState state() const { return state_; }
 
     bool IsWriting() { return events_ & EPOLLOUT; }
-    bool IsReading() { return events_ & EPOLLIN; }
+    bool IsReading() { return events_ & (EPOLLIN | EPOLLPRI); }
 
 private:
     EventLoop* loop_;

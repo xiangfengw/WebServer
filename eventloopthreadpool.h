@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <memory>
 
 namespace tiny_webserver {
 
@@ -11,7 +12,7 @@ class EventLoop;
 
 class EventLoopThreadPool {
 public:
-    typedef std::vector<EventLoopThread*> Threads;
+    typedef std::vector<std::unique_ptr<EventLoopThread>> Threads;
     typedef std::vector<EventLoop*> Loops;
 
     EventLoopThreadPool(EventLoop* loop);
